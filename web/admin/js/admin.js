@@ -129,6 +129,7 @@
   let selectedReviewIds = new Set();
   let inspectReportCache = new Map();
   let currentInspectReport = null;
+  let detailLoadSeq = 0;
   const INSPECT_STATUS_LABEL = {
     fail: "확인 필요",
     warn: "주의",
@@ -481,18 +482,19 @@
   }
 
   async function inspectCurrentStudent({ generated = null } = {}) {
-    if (!currentStudentId) return null;
+    const studentId = currentStudentId;
+    if (!studentId) return null;
     const body = {};
     const editorGenerated = generated ?? collectGeneratedFromEditor();
     if (Object.keys(editorGenerated || {}).length) {
       body.generated = editorGenerated;
     }
-    const report = await api(`/api/students/${currentStudentId}/inspect`, {
+    const report = await api(`/api/students/${studentId}/inspect`, {
       method: "POST",
       body,
     });
-    inspectReportCache.set(currentStudentId, report);
-    currentInspectReport = report;
+    inspectReportCache.set(studentId, report);
+    if (currentStudentId === studentId) currentInspectReport = report;
     return report;
   }
 
@@ -2375,10 +2377,13 @@
   }
 
   async function showStudent(id, fromTab = "review") {
+    const loadSeq = ++detailLoadSeq;
     currentStudentId = id;
     lastTabBeforeDetail = fromTab;
     const student = mergeStudentWithDraft(await api(`/api/students/${id}`));
+    if (loadSeq !== detailLoadSeq || currentStudentId !== id) return;
     currentStudentData = student;
+    currentInspectReport = null;
     switchTab("detail");
     document.getElementById("detailTitle").textContent = studentLabel(student);
     const privacyNote = privacySettings.store_generated
@@ -2389,9 +2394,11 @@
     if (detailTips) {
       detailTips.hidden = false;
       await loadWritingTipsPanel("common", detailTips);
+      if (loadSeq !== detailLoadSeq || currentStudentId !== id) return;
     }
     try {
       currentInspectReport = await inspectCurrentStudent();
+      if (loadSeq !== detailLoadSeq || currentStudentId !== id) return;
       document.getElementById("detailMeta").innerHTML = `상태: ${statusPill(student.status)}${privacyNote} ${inspectBadgeHtml(
         id,
         currentInspectReport
@@ -2400,9 +2407,12 @@
       renderFieldIssues(currentInspectReport);
       updateDetailCharCounts(currentInspectReport);
     } catch {
+      if (loadSeq !== detailLoadSeq || currentStudentId !== id) return;
       currentInspectReport = null;
       document.getElementById("detailMeta").innerHTML = `상태: ${statusPill(student.status)}${privacyNote}`;
       renderInspectSummary(null);
+      renderFieldIssues(null);
+      updateDetailCharCounts(null);
     }
   }
 
