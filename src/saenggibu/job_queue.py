@@ -17,6 +17,7 @@ from .write_sections import (
     ALL_TARGETS_SECTION,
     normalize_write_sections,
     pending_sections_for_student,
+    student_needs_section,
     students_needing_section,
     students_with_any_pending,
 )
@@ -155,6 +156,21 @@ def execute_run_job(job_id: str) -> RunJob:
             student = _get_student_for_run(job.student_id, draft_map)
             if not student:
                 raise ValueError("학생을 찾을 수 없습니다.")
+            if not student_needs_section(student, job.section):
+                job.status = "done"
+                job.total = 0
+                job.processed = 0
+                job.current_label = student.display_name
+                job.current_section = job.section
+                job.message = f"작성이 필요한 항목이 없습니다 ({job.section})."
+                job.result = {
+                    "mode": "single",
+                    "section": job.section,
+                    "processed": 0,
+                    "skipped": True,
+                    "student": student.to_dict(),
+                }
+                return save_job(job)
             job.total = 1
             job.current_label = student.display_name
             job.current_section = job.section

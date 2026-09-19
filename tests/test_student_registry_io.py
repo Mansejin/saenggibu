@@ -4,7 +4,7 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from openpyxl import load_workbook
+from openpyxl import Workbook, load_workbook
 
 from src.saenggibu.models import StudentInput
 from src.saenggibu.student_store import (
@@ -40,7 +40,7 @@ def test_export_and_import_registry_roundtrip(students_dir: Path) -> None:
             grade=2,
             class_num=3,
             number=5,
-            notes={"행발": "행발 메모", "keywords": ["책임감", "성실"]},
+            notes={"행발": "행발 메모", "keywords": ["책임감", "성실"], "write_targets": ["행발", "세특"]},
             subjects={
                 "국어": {
                     "career": "인문",
@@ -62,6 +62,7 @@ def test_export_and_import_registry_roundtrip(students_dir: Path) -> None:
     rows = read_registry_table(tsv_path)
     assert rows[0]["name"] == "김민수"
     assert rows[0]["행발_notes"] == "행발 메모"
+    assert rows[0]["write_targets"] == "행발|세특"
     assert rows[0]["세특_국어_활동"] == "토론 수업 참여"
     assert "창체_봉사" not in rows[0]
 
@@ -75,6 +76,80 @@ def test_export_and_import_registry_roundtrip(students_dir: Path) -> None:
     assert updated.generated.get("행발") == "작성본"
     assert updated.status == "done"
     assert updated.notes["행발"] == "행발 메모"
+    assert updated.notes["write_targets"] == ["행발", "세특"]
+    assert updated.subjects["국어"]["content"] == "토론 수업 참여"
+    assert updated.changche["자율"] == "학급 환경 미화"
+
+
+def test_update_import_preserves_omitted_registry_columns(students_dir: Path) -> None:
+    original = add_student(
+        StudentInput(
+            id="spreserve1",
+            name="김민수",
+            grade=2,
+            class_num=3,
+            number=5,
+            gender="남",
+            notes={"행발": "기존 행발", "keywords": ["기존"], "write_targets": ["세특"]},
+            subjects={"국어": {"content": "기존 세특", "activities": ["기존 세특"], "notes": "기존 세특"}},
+            changche={"자율": "기존 자율", "동아리": "기존 동아리", "진로": "기존 진로"},
+            generated={"세특": {"국어": "작성본"}},
+            status="partial",
+        )
+    )
+    tsv_path = students_dir / "partial_update.tsv"
+    tsv_path.write_text(
+        "id\tname\t행발_notes\n"
+        f"{original.id}\t김민수\t새 행발\n",
+        encoding="utf-8",
+    )
+
+    result = import_students_registry(tsv_path, mode="update")
+
+    assert result["updated"] == 1
+    updated = list_students()[0]
+    assert updated.grade == 2
+    assert updated.class_num == 3
+    assert updated.number == 5
+    assert updated.gender == "남"
+    assert updated.notes["행발"] == "새 행발"
+    assert updated.notes["keywords"] == ["기존"]
+    assert updated.notes["write_targets"] == ["세특"]
+    assert updated.subjects == original.subjects
+    assert updated.changche == original.changche
+    assert updated.generated == original.generated
+    assert updated.status == "partial"
+
+
+def test_update_import_can_clear_present_registry_fields(students_dir: Path) -> None:
+    original = add_student(
+        StudentInput(
+            id="sclear01",
+            name="이서연",
+            grade=2,
+            class_num=1,
+            number=1,
+            notes={"행발": "기존 행발", "keywords": ["기존"], "write_targets": ["행발", "세특"]},
+            subjects={"국어": {"content": "기존 세특", "activities": ["기존 세특"], "notes": "기존 세특"}},
+            changche={"자율": "기존 자율", "동아리": "", "진로": ""},
+        )
+    )
+    tsv_path = students_dir / "clear_update.tsv"
+    tsv_path.write_text(
+        "id\tname\t행발_notes\t행발_keywords\twrite_targets\t세특_국어_활동\t창체_자율\n"
+        f"{original.id}\t이서연\t\t\t행발\t\t\n",
+        encoding="utf-8",
+    )
+
+    result = import_students_registry(tsv_path, mode="update")
+
+    assert result["updated"] == 1
+    updated = list_students()[0]
+    assert updated.notes["행발"] == ""
+    assert updated.notes["keywords"] == []
+    assert updated.notes["write_targets"] == ["행발"]
+    assert "국어" not in updated.subjects
+    assert updated.changche["자율"] == ""
 
 
 def test_import_skip_duplicate(students_dir: Path) -> None:
@@ -104,7 +179,30 @@ def test_export_registry_xlsx(students_dir: Path) -> None:
     worksheet = workbook.active
     headers = [cell.value for cell in worksheet[1]]
     assert "행발_notes" in headers
+    assert "write_targets" in headers
     assert "창체_봉사" not in headers
+
+
+def test_read_registry_xlsx_pads_short_rows(students_dir: Path) -> None:
+    workbook = Workbook()
+    worksheet = workbook.active
+    worksheet.append(["name", "grade", "class_num", "number", "행발_notes"])
+    worksheet.append(["박지훈", 1])
+    worksheet.append(["", "", "", "", ""])
+    path = students_dir / "short.xlsx"
+    workbook.save(path)
+
+    rows = read_registry_table(path)
+
+    assert rows == [
+        {
+            "name": "박지훈",
+            "grade": "1",
+            "class_num": "",
+            "number": "",
+            "행발_notes": "",
+        }
+    ]
 
 
 def test_find_existing_for_row_by_identity(students_dir: Path) -> None:

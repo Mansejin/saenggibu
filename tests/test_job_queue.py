@@ -77,3 +77,36 @@ def test_execute_all_targets_single_student(
     assert calls == [["행발"], ["세특"]]
     assert finished.result["all_targets"] is True
     assert finished.result["sections_done"] == ["행발", "세특"]
+
+
+def test_execute_single_student_skips_unneeded_section(
+    jobs_dir: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    student = StudentInput(
+        id="s1",
+        name="김민수",
+        grade=2,
+        class_num=1,
+        number=1,
+        notes={"행발": "메모", "write_targets": ["세특"]},
+        subjects={"윤사": {"activities": ["토론"], "notes": ""}},
+    )
+    calls: list[list[str]] = []
+
+    def fake_generate(current: StudentInput, *, sections, progress=None):
+        calls.append(list(sections))
+        current.generated = {"행발": "잘못된 작성본"}
+        return current
+
+    monkeypatch.setattr("src.saenggibu.job_queue.get_student", lambda student_id: student if student_id == "s1" else None)
+    monkeypatch.setattr("src.saenggibu.job_queue.generate_for_student", fake_generate)
+
+    job = create_run_job(sections=["행발"], student_id="s1")
+    finished = execute_run_job(job.id)
+
+    assert finished.status == "done"
+    assert finished.processed == 0
+    assert finished.result["skipped"] is True
+    assert calls == []
+    assert student.generated == {}

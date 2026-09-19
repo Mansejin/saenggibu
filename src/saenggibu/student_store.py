@@ -15,6 +15,7 @@ from .io_utils import read_table_file
 from .models import StudentInput, new_id
 from .secure_io import load_secure_json, save_secure_json
 from .storage_policy import student_dict_for_disk
+from .write_sections import WRITE_SECTIONS
 
 
 def _student_path(student_id: str) -> Path:
@@ -283,6 +284,7 @@ def _split_multi(value: str) -> list[str]:
 
 
 REGISTRY_CHANGCHE_KEYS = ("자율", "동아리", "진로")
+REGISTRY_WRITE_TARGET_KEYS = ("write_targets", "작성대상", "작성_대상")
 REGISTRY_SUBJECT_SUFFIXES: tuple[tuple[str, str], ...] = (
     ("_진로", "career"),
     ("_수행평가", "assessment_type"),
@@ -308,6 +310,47 @@ def _row_str(row: dict[str, str], *keys: str) -> str:
         if value:
             return value
     return ""
+
+
+def _row_has_key(row: dict[str, str], *keys: str) -> bool:
+    return any(key in row for key in keys)
+
+
+def _write_targets_from_row(row: dict[str, str]) -> list[str]:
+    raw = _row_str(row, *REGISTRY_WRITE_TARGET_KEYS)
+    if not raw:
+        return []
+    allowed = set(WRITE_SECTIONS)
+    targets: list[str] = []
+    for item in _split_multi(raw):
+        if item in allowed and item not in targets:
+            targets.append(item)
+    return targets
+
+
+def _subjects_present_in_row(row: dict[str, str]) -> set[str]:
+    subjects: set[str] = set()
+    for key in row.keys():
+        if key.startswith("세특_"):
+            rest = key[3:]
+            for suffix, _field in REGISTRY_SUBJECT_SUFFIXES:
+                if rest.endswith(suffix):
+                    subject = rest[: -len(suffix)]
+                    if subject:
+                        subjects.add(subject)
+                    break
+            else:
+                if rest:
+                    subjects.add(rest)
+        elif key.startswith("subject_"):
+            subject = key.split("_", 1)[1]
+            if subject:
+                subjects.add(subject)
+        elif key.endswith("_activities"):
+            subject = key.removesuffix("_activities")
+            if subject:
+                subjects.add(subject)
+    return subjects
 
 
 def student_identity_key(
@@ -412,6 +455,9 @@ def student_from_row(row: dict[str, str]) -> StudentInput:
     keywords_raw = _row_str(row, "행발_keywords", "행발_키워드")
     if "keywords" not in notes and keywords_raw:
         notes["keywords"] = _split_multi(keywords_raw)
+    write_targets = _write_targets_from_row(row)
+    if write_targets:
+        notes["write_targets"] = write_targets
 
     haengbal = _row_str(row, "행발_notes", "행발_메모", "notes")
 
@@ -457,6 +503,7 @@ def registry_headers(students: list[StudentInput]) -> list[str]:
         "class_num",
         "number",
         "gender",
+        "write_targets",
         "행발_notes",
         "행발_keywords",
     ]
@@ -488,6 +535,11 @@ def student_to_registry_row(student: StudentInput, subjects: list[str]) -> dict[
         "class_num": str(student.class_num),
         "number": str(student.number),
         "gender": student.gender or "",
+        "write_targets": "|".join(
+            str(item).strip() for item in notes.get("write_targets", []) if str(item).strip()
+        )
+        if isinstance(notes.get("write_targets"), list)
+        else str(notes.get("write_targets") or ""),
         "행발_notes": str(notes.get("행발") or notes.get("행발_notes") or ""),
         "행발_keywords": keyword_text,
     }
@@ -526,7 +578,7 @@ def read_registry_table(path: Path) -> list[dict[str, str]]:
         rows: list[dict[str, str]] = []
         for values in rows_iter:
             row = {
-                headers[index]: str(values[index] or "").strip()
+                headers[index]: str((values[index] if index < len(values) else "") or "").strip()
                 for index in range(len(headers))
                 if headers[index]
             }
@@ -612,14 +664,39 @@ def preview_students_import(path: Path) -> dict[str, object]:
 
 def merge_student_from_row(existing: StudentInput, row: dict[str, str]) -> StudentInput:
     incoming = student_from_row({**row, "id": existing.id})
-    existing.name = incoming.name
-    existing.grade = incoming.grade
-    existing.class_num = incoming.class_num
-    existing.number = incoming.number
-    existing.gender = incoming.gender
-    existing.notes = incoming.notes
-    existing.subjects = incoming.subjects
-    existing.changche = incoming.changche
+    if _row_has_key(row, "name", "이름"):
+        existing.name = incoming.name
+    if _row_has_key(row, "grade", "학년"):
+        existing.grade = incoming.grade
+    if _row_has_key(row, "class_num", "반"):
+        existing.class_num = incoming.class_num
+    if _row_has_key(row, "number", "번호"):
+        existing.number = incoming.number
+    if _row_has_key(row, "gender", "성별"):
+        existing.gender = incoming.gender
+
+    notes = dict(existing.notes or {})
+    if _row_has_key(row, "행발_notes", "행발_메모", "notes"):
+        notes["행발"] = _row_str(row, "행발_notes", "행발_메모", "notes")
+    if _row_has_key(row, "행발_keywords", "행발_키워드"):
+        notes["keywords"] = _split_multi(_row_str(row, "행발_keywords", "행발_키워드"))
+    if _row_has_key(row, *REGISTRY_WRITE_TARGET_KEYS):
+        notes["write_targets"] = _write_targets_from_row(row)
+    existing.notes = notes
+
+    subjects = dict(existing.subjects or {})
+    for subject in _subjects_present_in_row(row):
+        if subject in incoming.subjects:
+            subjects[subject] = incoming.subjects[subject]
+        else:
+            subjects.pop(subject, None)
+    existing.subjects = subjects
+
+    changche = dict(existing.changche or {})
+    for key in REGISTRY_CHANGCHE_KEYS:
+        if _row_has_key(row, f"창체_{key}", f"changche_{key}"):
+            changche[key] = _row_str(row, f"창체_{key}", f"changche_{key}")
+    existing.changche = changche
     return save_student(existing)
 
 
