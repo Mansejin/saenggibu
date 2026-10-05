@@ -553,8 +553,20 @@ if [ "$PULL_ONLY" != "1" ] && uses_cloudflare_tunnel; then
   ensure_compose_stack
 fi
 
+wait_for_health() {
+  i=0
+  while [ "$i" -lt 30 ]; do
+    if curl -sf "http://127.0.0.1:${SGB_PORT:-8787}/health" >/dev/null 2>&1; then
+      return 0
+    fi
+    i=$((i + 1))
+    sleep 2
+  done
+  return 1
+}
+
 if command -v curl >/dev/null 2>&1; then
-  if curl -sf "http://127.0.0.1:${SGB_PORT:-8787}/health" >/dev/null 2>&1; then
+  if wait_for_health; then
     log "==> health OK"
     disable_maintenance_page
   else
