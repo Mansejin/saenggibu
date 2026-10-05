@@ -1,8 +1,8 @@
 .env
-.env.local
+.env.*
+!config*.example.env
 config/nas-pc.local.env
-credentials/*.json
-credentials/oauth-pending.json
+logs/
 __pycache__/
 *.pyc
 .venv/
@@ -16,3 +16,6 @@ data/saenggibu/outputs/
 data/saenggibu/samples/index.json
 data/saenggibu/samples/sample*.json
 data/saenggibu/patterns.json
+data/saenggibu/jobs/
+data/saenggibu/usage.json
+data/saenggibu/maintenance.on

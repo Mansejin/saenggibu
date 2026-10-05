@@ -3073,7 +3073,7 @@
     const expectedPanels = ["panelLearn", "panelStyle", "panelStudents", "panelReview"];
     const missing = expectedPanels.filter((id) => !document.getElementById(id));
     if (missing.length) {
-      showToast("관리자 UI가 오래됐습니다. NAS-UI-동기화.bat 실행 후 브라우저 캐시를 초기화하고 새로고침하세요.");
+      showToast("관리자 UI가 오래됐습니다. NAS 배포(main push 또는 NAS-배포.bat) 후 브라우저 캐시를 초기화하고 새로고침하세요.");
     }
     try {
       await api("/api/auth/me", { rawError: true });

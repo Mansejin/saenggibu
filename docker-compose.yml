@@ -1,7 +1,9 @@
 services:
   sgb-api:
     build: .
-    container_name: saenggibu-api
+    # NAS overrides names via .env (see docs/deploy-nas-auto.md)
+    container_name: ${SGB_API_CONTAINER:-saenggibu-api}
+    image: ${SGB_API_IMAGE:-saenggibu-sgb-api:latest}
     restart: unless-stopped
     expose:
       - "8787"
@@ -19,7 +21,7 @@ services:
 
   sgb-gateway:
     image: nginx:1.27-alpine
-    container_name: saenggibu-gateway
+    container_name: ${SGB_GATEWAY_CONTAINER:-saenggibu-gateway}
     restart: unless-stopped
     ports:
       - "8787:8787"

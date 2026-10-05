@@ -31,7 +31,7 @@ mansejin.com은 **화면만** 있고, **실제 작업은 API 서버**가 합니�
 
 ## 준비물 체크리스트
 
-- [ ] 이 프로젝트 (`auto_script`) 폴더
+- [ ] 이 프로젝트 (`saenggibu`) 폴더
 - [ ] [Gemini API 키](https://aistudio.google.com/apikey) (무료 발급)
 - [ ] 관리자용 비밀번호 (본인만 아는 긴 문자열)
 - [ ] (mansejin 연동 시) tools-site에 admin 페이지 반영
@@ -129,7 +129,7 @@ Windows: https://developers.cloudflare.com/cloudflare-one/connections/connect-ne
 터미널 1:
 
 ```powershell
-cd auto_script폴더
+cd saenggibu폴더
 python server.py
 ```
 
@@ -166,7 +166,7 @@ https://railway.app — GitHub로 로그인
 
 ### C-2. 새 프로젝트
 
-1. **Deploy from GitHub repo** → `Mansejin/auto_script` 선택
+1. **Deploy from GitHub repo** → `Mansejin/saenggibu` 선택
 2. 브랜치: `main`
 
 ### C-3. 환경 변수 (Railway Variables)

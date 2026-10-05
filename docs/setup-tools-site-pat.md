@@ -20,7 +20,7 @@ Cursor 봇은 **당신 GitHub Secrets에 접근할 수 없어서** PAT는 본인
 
 ## 2) Secret 등록 (30초)
 
-1. 열기: https://github.com/Mansejin/auto_script/settings/secrets/actions  
+1. 열기: https://github.com/Mansejin/saenggibu/settings/secrets/actions  
 2. **New repository secret**
 3. Name: `TOOLS_SITE_PAT`  ← **이름 정확히**
 4. Secret: 방금 복사한 토큰 붙여넣기
@@ -30,7 +30,7 @@ Cursor 봇은 **당신 GitHub Secrets에 접근할 수 없어서** PAT는 본인
 
 ## 3) 자동 배포 실행 (30초)
 
-1. 열기: https://github.com/Mansejin/auto_script/actions/workflows/sync-tools-site.yml  
+1. 열기: https://github.com/Mansejin/saenggibu/actions/workflows/sync-tools-site.yml  
 2. **Run workflow** → Branch: `main` → **Run workflow**
 3. 초록 체크 뜨면 성공
 
@@ -40,7 +40,7 @@ Cursor 봇은 **당신 GitHub Secrets에 접근할 수 없어서** PAT는 본인
 
 ## 이후
 
-`auto_script`에 push할 때마다 tools-site redirect가 **자동 갱신**됩니다.  
+`saenggibu`에 push할 때마다 tools-site redirect가 **자동 갱신**됩니다.  
 **복사·GitHub Desktop push 필요 없음.**
 
 UI/업로드 변경은 **나스만** `docker compose up -d --build`.

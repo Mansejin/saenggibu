@@ -13,7 +13,7 @@
 
 ### 1) 코드 반영
 
-`NAS-업데이트.bat` 또는 `nas-docker-update.sh`로 최신 `main`을 받습니다.
+`main` push(자동 배포) 또는 `scripts\NAS-배포.bat`로 최신 `main`을 받습니다.
 
 ### 2) Cloudflare Tunnel 대상 변경
 
@@ -52,7 +52,7 @@ Zero Trust → Tunnels → Public Hostname → Service:
 저장 후 1~2분 대기. (게이트웨이 없이 API만 살아 있을 때)
 
 **B. 정식 — 스택 올리기**  
-PC에서 `NAS-업데이트.bat` 실행 (또는 NAS에서):
+NAS에서 (`ssh nas`):
 
 ```bash
 cd /volume1/docker/saenggibu
@@ -64,11 +64,11 @@ sh scripts/nas-docker-update.sh --full-build
 ### 점검 명령 (NAS SSH)
 
 ```bash
-docker ps --format 'table {{.Names}}\t{{.Status}}' | grep saenggibu
+sudo -n /usr/local/bin/docker ps --format 'table {{.Names}}\t{{.Status}}'
 curl -s http://127.0.0.1:8787/health
 ```
 
-`saenggibu-gateway` 가 없으면 B안 실행.
+게이트웨이 컨테이너(`.env`의 `SGB_GATEWAY_CONTAINER`)가 없으면 B안 실행.
 
 점검 파일이 남았으면: `rm /volume1/docker/saenggibu/data/saenggibu/maintenance.on`
 

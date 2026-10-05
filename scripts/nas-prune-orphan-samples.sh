@@ -5,9 +5,11 @@
 set -e
 ROOT="${NAS_REPO:-/volume1/docker/saenggibu}"
 cd "$ROOT"
+API="$(grep -E '^SGB_API_CONTAINER=' .env 2>/dev/null | tail -n 1 | cut -d= -f2 | tr -d '\r\"')"
+API="${API:-saenggibu-api}"
 
-if command -v docker >/dev/null 2>&1 && docker ps --format '{{.Names}}' | grep -q saenggibu-api; then
-  docker exec saenggibu-api python -c "
+if command -v docker >/dev/null 2>&1 && docker ps --format '{{.Names}}' | grep -qx "$API"; then
+  docker exec "$API" python -c "
 from src.saenggibu.sample_store import reconcile_sample_index, list_samples
 removed = reconcile_sample_index()
 print('Removed:', removed if removed else '(none)')

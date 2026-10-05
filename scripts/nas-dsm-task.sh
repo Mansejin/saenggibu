@@ -37,7 +37,7 @@ echo "=== $(date '+%Y-%m-%d %H:%M:%S') DSM task start branch=$BRANCH ===" >> "$L
 export SGB_BRANCH="$BRANCH"
 export SGB_DOCKER_SUDO=1
 
-if ! curl -fsSL "https://raw.githubusercontent.com/Mansejin/auto_script/${BRANCH}/scripts/nas-docker-update.sh" \
+if ! curl -fsSL "https://raw.githubusercontent.com/Mansejin/saenggibu/${BRANCH}/scripts/nas-docker-update.sh" \
   -o /tmp/sgb-deploy.sh >> "$LOG" 2>&1; then
   echo "ERROR: curl deploy script failed" >> "$LOG"
   exit 1

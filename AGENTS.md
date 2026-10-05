@@ -2,11 +2,17 @@
 
 ## Cursor Cloud specific instructions
 
-This repo hosts a Python project with three entry points:
+This repo hosts the 생기부 (saenggibu) writing machine with two entry points:
 
 - **생기부 admin web app** (main product): FastAPI + uvicorn. Run with `python3 server.py` → serves `http://127.0.0.1:8787` (UI at `/admin/saenggibu`, health at `/health`). Static UI is under `web/admin`.
 - **`sgb.py`**: 생기부 (saenggibu) writing CLI (`init`, `samples import`, `analyze`, `students import`, `run`).
-- **`cli.py`**: 디디딧 Google Sheets sync CLI (needs Google OAuth/service-account credentials in `credentials/`).
+
+The 디디딧 Google Sheets CLI used to live here; it moved to `Mansejin/auto_script`.
+
+### NAS deploy
+
+- Deploy = push to `main` (GitHub Actions). Details: `docs/deploy-nas-auto.md`.
+- How to reach the NAS (SSH aliases, Tailscale, office vs home) is documented only in the private repo `Mansejin/ohola-nas`. Do not add NAS connection docs here.
 
 ### Setup / run notes
 

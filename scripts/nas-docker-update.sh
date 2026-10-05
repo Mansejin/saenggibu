@@ -10,10 +10,16 @@
 # Branch: SGB_BRANCH=main sh scripts/nas-docker-update.sh
 #        (or set SGB_DEPLOY_BRANCH in .env)
 # Sudo:   SGB_DOCKER_SUDO=1 sh scripts/nas-docker-update.sh
+# Repo:   SGB_REPO_DIR=/volume1/docker/<dir> (default /volume1/docker/saenggibu)
+# Names:  container names come from .env (SGB_API_CONTAINER, SGB_GATEWAY_CONTAINER,
+#         SGB_TUNNEL_CONTAINER) — same keys docker-compose*.yml read.
 
 set -e
 
-REPO_DIR="/volume1/docker/saenggibu"
+REPO_DIR="${SGB_REPO_DIR:-/volume1/docker/saenggibu}"
+if [ -d "$REPO_DIR" ]; then
+  REPO_DIR=$(cd "$REPO_DIR" && pwd -P)
+fi
 GIT_IMAGE="alpine/git:latest"
 LOGS_ONLY=0
 NO_BUILD=0
@@ -39,6 +45,7 @@ if [ "$(id -u)" != "0" ] && [ -n "$NAS_SUDO_PASSWORD" ] && [ -z "$SGB_DEPLOY_AS_
   export SGB_DEPLOY_AS_ROOT=1
   printf '%s\n' "$NAS_SUDO_PASSWORD" | sudo -S -E env \
     SGB_BRANCH="${SGB_BRANCH:-}" \
+    SGB_REPO_DIR="$REPO_DIR" \
     SGB_DOCKER_SUDO="${SGB_DOCKER_SUDO:-}" \
     SGB_FORCE_BUILD="${SGB_FORCE_BUILD:-}" \
     NAS_SUDO_PASSWORD="$NAS_SUDO_PASSWORD" \
@@ -69,7 +76,26 @@ read_deploy_branch() {
   echo "main"
 }
 
+read_env_value() {
+  key="$1"
+  fallback="$2"
+  if [ -f "$REPO_DIR/.env" ]; then
+    line=$(grep -E "^${key}=" "$REPO_DIR/.env" 2>/dev/null | tail -n 1 || true)
+    if [ -n "$line" ]; then
+      val=$(echo "${line#*=}" | tr -d '\r' | tr -d '"' | tr -d "'")
+      if [ -n "$val" ]; then
+        echo "$val"
+        return
+      fi
+    fi
+  fi
+  echo "$fallback"
+}
+
 BRANCH=$(read_deploy_branch)
+API_CONTAINER=$(read_env_value SGB_API_CONTAINER saenggibu-api)
+GATEWAY_CONTAINER=$(read_env_value SGB_GATEWAY_CONTAINER saenggibu-gateway)
+TUNNEL_CONTAINER=$(read_env_value SGB_TUNNEL_CONTAINER saenggibu-tunnel)
 LOG_DIR="$REPO_DIR/logs"
 LOG_FILE="$LOG_DIR/deploy.log"
 
@@ -127,8 +153,8 @@ git_sync_deploy() {
   if [ -n "$GIT" ]; then
     log "==> git sync ($BRANCH) via $GIT"
     "$GIT" fetch origin "$BRANCH" || "$GIT" fetch origin
-    "$GIT" clean -fd -e .env -e logs
     "$GIT" reset --hard "origin/$BRANCH"
+    "$GIT" clean -fd -e .env -e '.env.*' -e logs -e data/
     log "==> git at $("$GIT" rev-parse --short HEAD)"
     return
   fi
@@ -143,8 +169,8 @@ git_sync_deploy() {
     -ec "
       git config --global --add safe.directory /git
       git fetch origin '$BRANCH'
-      git clean -fd -e .env -e logs
       git reset --hard 'origin/$BRANCH'
+      git clean -fd -e .env -e '.env.*' -e logs -e data/
       git rev-parse --short HEAD
     ")
   log "==> git at $short"
@@ -266,7 +292,7 @@ service_in_compose() {
 }
 
 prune_stale_stack_containers() {
-  for pair in "saenggibu-api:sgb-api" "saenggibu-gateway:sgb-gateway" "saenggibu-tunnel:cloudflared"; do
+  for pair in "$API_CONTAINER:sgb-api" "$GATEWAY_CONTAINER:sgb-gateway" "$TUNNEL_CONTAINER:cloudflared"; do
     cname="${pair%%:*}"
     svc="${pair#*:}"
     if $DOCKER container inspect "$cname" >/dev/null 2>&1; then
@@ -280,7 +306,7 @@ prune_stale_stack_containers() {
 
 prepare_compose_rebuild() {
   prune_stale_stack_containers
-  for name in saenggibu-api saenggibu-gateway; do
+  for name in "$API_CONTAINER" "$GATEWAY_CONTAINER"; do
     if $DOCKER container inspect "$name" >/dev/null 2>&1; then
       log "==> stop $name before rebuild (free port / layout change)"
       $DOCKER rm -f "$name" 2>/dev/null || true
@@ -304,9 +330,9 @@ compose_up() {
   files=$(compose_files)
   services=$(compose_app_services)
 
-  remove_stopped_container saenggibu-api
-  remove_stopped_container saenggibu-gateway
-  remove_stopped_container saenggibu-tunnel
+  remove_stopped_container "$API_CONTAINER"
+  remove_stopped_container "$GATEWAY_CONTAINER"
+  remove_stopped_container "$TUNNEL_CONTAINER"
 
   # shellcheck disable=SC2086
   case "$mode" in
@@ -350,7 +376,7 @@ ensure_cloudflared_running() {
   if ! echo "$files" | grep -q cloudflare; then
     return
   fi
-  if container_running saenggibu-tunnel; then
+  if container_running "$TUNNEL_CONTAINER"; then
     return
   fi
   log "==> start cloudflared (missing or stopped)"
@@ -363,12 +389,12 @@ ensure_compose_stack() {
     return
   fi
   need_build=0
-  if service_in_compose sgb-gateway && ! container_running saenggibu-gateway; then
-    log "WARN: saenggibu-gateway not running — will create stack"
+  if service_in_compose sgb-gateway && ! container_running "$GATEWAY_CONTAINER"; then
+    log "WARN: $GATEWAY_CONTAINER not running — will create stack"
     need_build=1
   fi
-  if service_in_compose sgb-api && ! container_running saenggibu-api; then
-    log "WARN: saenggibu-api not running — will create stack"
+  if service_in_compose sgb-api && ! container_running "$API_CONTAINER"; then
+    log "WARN: $API_CONTAINER not running — will create stack"
     need_build=1
   fi
   if [ "$need_build" = "1" ]; then
@@ -422,7 +448,7 @@ ensure_docker_access() {
 
   log "ERROR: cannot access docker daemon."
   log "  1) One-time (root): sh scripts/nas-setup-docker-sudo.sh"
-  log "  2) PC config: NAS_SUDO_PASSWORD in config/nas-pc.local.env"
+  log "  2) Pass NAS_SUDO_PASSWORD env (password: ohola-nas .env.local on PC)"
   log "  3) NAS .env: SGB_DOCKER_SUDO=1"
   log "  4) DSM Task Scheduler as root"
   exit 126
@@ -532,8 +558,8 @@ if command -v curl >/dev/null 2>&1; then
     log "==> health OK"
     disable_maintenance_page
   else
-    log "WARN: health check failed — try: docker logs saenggibu-api --tail 50"
-    log "WARN: gateway: docker logs saenggibu-gateway --tail 30"
+    log "WARN: health check failed — try: docker logs $API_CONTAINER --tail 50"
+    log "WARN: gateway: docker logs $GATEWAY_CONTAINER --tail 30"
     log "WARN: tunnel target must be http://sgb-gateway:8787 after gateway deploy"
     log "WARN: emergency rollback: tunnel -> http://sgb-api:8787 if gateway missing"
     log "WARN: stuck maintenance? rm data/saenggibu/maintenance.on"

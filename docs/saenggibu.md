@@ -9,7 +9,7 @@
 
 공개 메뉴·도구함(`data/tools.json`)에는 **노출되지 않습니다**. URL을 아는 관리자만 접근합니다.
 
-### 1. API 서버 실행 (auto_script)
+### 1. API 서버 실행 (saenggibu)
 
 ```bash
 pip install -r requirements.txt
@@ -43,7 +43,7 @@ python3 server.py
 
 나스에서 `web/admin` + API만 최신이면 됩니다. tools-site는 redirect HTML 한 장만 유지.
 
-자동 sync: `auto_script` Secrets에 `TOOLS_SITE_PAT` 설정 시 push마다 tools-site 반영.
+자동 sync: `saenggibu` Secrets에 `TOOLS_SITE_PAT` 설정 시 push마다 tools-site 반영.
 
 상세: [`deploy/tools-site-admin/README.md`](../deploy/tools-site-admin/README.md)
 

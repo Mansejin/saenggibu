@@ -17,7 +17,7 @@ services:
 
   cloudflared:
     image: cloudflare/cloudflared:latest
-    container_name: saenggibu-tunnel
+    container_name: ${SGB_TUNNEL_CONTAINER:-saenggibu-tunnel}
     restart: unless-stopped
     command: tunnel --no-autoupdate run
     environment:

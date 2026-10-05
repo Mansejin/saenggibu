@@ -39,8 +39,8 @@ jobs:
             skip=true
           fi
           if [ -z "${{ secrets.TAILSCALE_AUTHKEY }}" ]; then
-            echo "::error::TAILSCALE_AUTHKEY missing — GitHub cannot SSH into home NAS (i/o timeout)."
-            echo "::error::Fix: docs/deploy-nas-auto.md — add Tailscale auth key OR use NAS Task Scheduler (section A)."
+            echo "::error::TAILSCALE_AUTHKEY missing — GitHub cannot SSH into the office NAS (i/o timeout)."
+            echo "::error::Fix: docs/deploy-nas-auto.md"
             skip=true
           fi
           if [ "$skip" = "true" ]; then
@@ -106,10 +106,12 @@ jobs:
           script: |
             set -e
             REPO="${NAS_REPO_PATH:-/volume1/docker/saenggibu}"
+            [ -d "$REPO" ] || REPO="/volume1/docker/saenggibu"
             export PATH="/usr/local/bin:/var/packages/ContainerManager/target/usr/bin:/var/packages/Docker/target/usr/bin:/var/packages/Git/target/usr/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
             export SGB_BRANCH
+            export SGB_REPO_DIR="$REPO"
             export SGB_DOCKER_SUDO="${SGB_DOCKER_SUDO:-1}"
-            curl -fsSL "https://raw.githubusercontent.com/Mansejin/auto_script/${SGB_BRANCH}/scripts/nas-docker-update.sh" -o /tmp/sgb-deploy.sh
+            curl -fsSL "https://raw.githubusercontent.com/Mansejin/saenggibu/${SGB_BRANCH}/scripts/nas-docker-update.sh" -o /tmp/sgb-deploy.sh
             sed -i 's/\r$//' /tmp/sgb-deploy.sh 2>/dev/null || true
             cd "$REPO"
             sh /tmp/sgb-deploy.sh

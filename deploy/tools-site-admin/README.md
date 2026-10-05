@@ -8,10 +8,10 @@
 
 ## 자동 배포 (선택, 1회 설정)
 
-`auto_script` 저장소 Secrets에 `TOOLS_SITE_PAT` 추가 시, push마다 redirect 페이지가 tools-site에 자동 반영됩니다.
+`saenggibu` 저장소 Secrets에 `TOOLS_SITE_PAT` 추가 시, push마다 redirect 페이지가 tools-site에 자동 반영됩니다.
 
 1. GitHub → Settings → Developer settings → Personal access token (repo 권한)
-2. `auto_script` → Settings → Secrets → `TOOLS_SITE_PAT`
+2. `saenggibu` → Settings → Secrets → `TOOLS_SITE_PAT`
 
 수동 push 없이도 mansejin.com 주소가 유지됩니다.
 

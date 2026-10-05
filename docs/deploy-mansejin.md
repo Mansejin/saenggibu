@@ -95,9 +95,9 @@ SGB_ALLOWED_ORIGINS=https://mansejin.com,https://www.mansejin.com
 
 ### 한 번만 (둘 중 하나)
 
-**A. 자동 (추천)** — GitHub `auto_script` → Settings → Secrets → `TOOLS_SITE_PAT`  
+**A. 자동 (추천)** — GitHub `saenggibu` → Settings → Secrets → `TOOLS_SITE_PAT`  
 (본인 GitHub 토큰, `tools-site` 쓰기 권한)  
-이후 `auto_script` push마다 redirect 페이지가 tools-site에 자동 반영됩니다.
+이후 `saenggibu` push마다 redirect 페이지가 tools-site에 자동 반영됩니다.
 
 **B. 수동 1회** — `deploy/tools-site-admin/admin/saenggibu/index.html` **한 파일만** tools-site에 push
 
@@ -111,35 +111,13 @@ UI·업로드 기능 변경은 **나스만** pull + `docker compose up -d --buil
 
 ## 업데이트 방법
 
-### PC에서 쉽게 (SSH·SMB)
+### API (나스)
 
-SSH 주소 매번 치기 귀찮으면 → **[`docs/nas-pc-access.md`](nas-pc-access.md)**
+`main`에 push하면 GitHub Actions가 자동 배포합니다. 수동 배포·NAS 설정은 [docs/deploy-nas-auto.md](deploy-nas-auto.md).
 
-- `scripts\NAS-접속.bat` — 더블클릭 SSH
-- `scripts\NAS-업데이트.bat` — 더블클릭 pull + 재빌드
-- `.\scripts\nas-pc.ps1 map` — `docker` 폴더를 PC `Z:` 드라이브로
+NAS 접속 방법(SSH 별칭, Tailscale, 키)은 [Mansejin/ohola-nas](https://github.com/Mansejin/ohola-nas)(비공개) 한 곳에만 정리합니다.
 
-### API (나스) — 자동 배포 (권장)
-
-**push만 하면 반영** — [docs/deploy-nas-auto.md](deploy-nas-auto.md)
-
-1. **쉬운 방법:** DSM 작업 스케줄러 10분마다 `nas-scheduled-pull.sh`
-2. **빠른 방법:** GitHub Actions + Tailscale auth key
-
-수동 긴급 배포:
-
-```powershell
-.\scripts\nas-pc.ps1 deploy -Profile local
-```
-
-### API (나스) — 수동 SSH (참고)
-
-```bash
-docker run --rm -v /volume1/docker/saenggibu:/git -w /git alpine/git pull origin main
-docker compose up -d --build
-```
-
-### 관리자 화면 (auto_script → tools-site)
+### 관리자 화면 (saenggibu → tools-site)
 
 ```bash
 ./scripts/sync-tools-site-admin.sh

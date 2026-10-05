@@ -13,7 +13,7 @@
 2. 파일 이름: `sync-saenggibu-admin.yml`
 
 3. 아래 파일 내용 **전체 복사**해서 붙여넣기:  
-   `auto_script` 저장소의  
+   `saenggibu` 저장소의  
    `deploy/tools-site-admin/.github/workflows/sync-saenggibu-admin.yml`
 
 4. **Commit changes** → **Commit directly to main**
@@ -29,16 +29,16 @@
 | 할 일 | 누가 |
 |--------|------|
 | UI·업로드 기능 수정 | 나스 `docker compose up -d --build` |
-| mansejin.com redirect 갱신 | **자동** (매시간 + auto_script push 시 수동 실행 가능) |
+| mansejin.com redirect 갱신 | **자동** (매시간 + saenggibu push 시 수동 실행 가능) |
 
 **복사·tools-site push 필요 없음.**
 
 ---
 
-## (선택) auto_script PAT 방식
+## (선택) saenggibu PAT 방식
 
-`auto_script` → Settings → Secrets → `TOOLS_SITE_PAT` 를 넣으면  
-`auto_script` push 시 즉시 tools-site 반영 (`.github/workflows/sync-tools-site.yml`).
+`saenggibu` → Settings → Secrets → `TOOLS_SITE_PAT` 를 넣으면  
+`saenggibu` push 시 즉시 tools-site 반영 (`.github/workflows/sync-tools-site.yml`).
 
 PAT 발급: GitHub → Settings → Developer settings → Fine-grained token  
 - Repository: `Mansejin/tools-site`  
