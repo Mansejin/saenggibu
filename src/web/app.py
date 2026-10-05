@@ -5,7 +5,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from src.saenggibu.config import ensure_data_dirs
@@ -40,6 +40,12 @@ def create_app() -> FastAPI:
 
     if ADMIN_STATIC.is_dir():
         app.mount("/admin-static", StaticFiles(directory=ADMIN_STATIC), name="admin-static")
+
+        @app.get("/", include_in_schema=False)
+        @app.get("/admin", include_in_schema=False)
+        @app.get("/admin/", include_in_schema=False)
+        def admin_root() -> RedirectResponse:
+            return RedirectResponse("/admin/saenggibu", status_code=307)
 
         @app.get("/admin/saenggibu")
         def admin_page() -> FileResponse:
