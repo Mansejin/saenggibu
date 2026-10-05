@@ -43,7 +43,7 @@ Cursor 봇은 **당신 GitHub Secrets에 접근할 수 없어서** PAT는 본인
 `saenggibu`에 push할 때마다 tools-site redirect가 **자동 갱신**됩니다.  
 **복사·GitHub Desktop push 필요 없음.**
 
-UI/업로드 변경은 **나스만** `docker compose up -d --build`.
+UI/업로드 변경은 `saenggibu` main push만 하면 Vercel이 배포합니다.
 
 ---
 

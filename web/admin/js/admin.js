@@ -1047,7 +1047,7 @@
       response = await fetch(`${API_BASE}${path}`, { ...options, headers, credentials: "include" });
     } catch {
       const hint = configuredBase
-        ? `API 서버(${configuredBase})에 연결할 수 없습니다. NAS·터널이 실행 중인지 확인하세요.`
+        ? `API 서버(${configuredBase})에 연결할 수 없습니다. 잠시 후 다시 시도하세요.`
         : "API 서버에 연결할 수 없습니다.";
       throw new Error(hint);
     }
@@ -3073,7 +3073,7 @@
     const expectedPanels = ["panelLearn", "panelStyle", "panelStudents", "panelReview"];
     const missing = expectedPanels.filter((id) => !document.getElementById(id));
     if (missing.length) {
-      showToast("관리자 UI가 오래됐습니다. NAS 배포(main push 또는 NAS-배포.bat) 후 브라우저 캐시를 초기화하고 새로고침하세요.");
+      showToast("관리자 UI가 오래됐습니다. 브라우저 캐시를 초기화하고 새로고침하세요.");
     }
     try {
       await api("/api/auth/me", { rawError: true });

@@ -152,7 +152,7 @@ def parse_xlsx_records(path: Path) -> list[SampleRecord]:
     try:
         text = _xlsx_to_text(path)
     except ImportError as exc:
-        raise ValueError("엑셀 처리 패키지(openpyxl)가 설치되지 않았습니다. NAS update 후 재시도하세요.") from exc
+        raise ValueError("엑셀 처리 패키지(openpyxl)가 설치되지 않았습니다. requirements.txt 설치 후 재시도하세요.") from exc
     except Exception as exc:
         raise ValueError(f"엑셀 파일을 읽을 수 없습니다: {path.name} ({exc})") from exc
 

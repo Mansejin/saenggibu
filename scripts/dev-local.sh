@@ -1,5 +1,5 @@
 #!/bin/sh
-# Local dev server — test admin UI/API without NAS docker restart
+# Local dev server — test admin UI/API before pushing to main (Vercel)
 #   ./scripts/dev-local.sh
 
 set -e
@@ -79,7 +79,7 @@ echo "  Login password (local): dev-local"
 echo "  Dev demo: 검토 목록에 「2-1 99번 김테스트」(작성 완료) 자동 등록"
 echo "  Model: write=Pro (3.1) · sample analysis=Pro"
 echo "· Python API 수정 → 자동 재시작 (SGB_RELOAD=1)"
-echo "· NAS 배포는 기능 확인 후 하루 1~2회만"
+echo "· 운영 배포 = main push (Vercel)"
 echo ""
 
 exec python3 server.py

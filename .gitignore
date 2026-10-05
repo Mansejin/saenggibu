@@ -18,7 +18,6 @@ data/saenggibu/samples/sample*.json
 data/saenggibu/patterns.json
 data/saenggibu/jobs/
 data/saenggibu/usage.json
-data/saenggibu/maintenance.on
 .vercel
 .env*
 .agents/

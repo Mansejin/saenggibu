@@ -1,6 +1,6 @@
 # A안: tools-site 자동 배포 (PAT 없음, 2분)
 
-`mansejin.com/admin/saenggibu/` 가 나스 API로 자동 이동하도록 설정합니다.  
+`mansejin.com/admin/saenggibu/` 가 Vercel의 생기부 API로 자동 이동하도록 설정합니다.  
 **한 번만** tools-site에 워크플로 파일을 넣으면, 이후는 **자동**입니다.
 
 ---
@@ -28,7 +28,7 @@
 
 | 할 일 | 누가 |
 |--------|------|
-| UI·업로드 기능 수정 | 나스 `docker compose up -d --build` |
+| UI·업로드 기능 수정 | `saenggibu` main push → Vercel 자동 배포 |
 | mansejin.com redirect 갱신 | **자동** (매시간 + saenggibu push 시 수동 실행 가능) |
 
 **복사·tools-site push 필요 없음.**
@@ -54,4 +54,4 @@ Secret 이름은 반드시 `TOOLS_SITE_PAT`.
 |------|------|
 | Actions 탭이 없음 | tools-site → Settings → Actions → Allow |
 | workflow 실패 | Actions 로그 확인, `main` 브랜치인지 확인 |
-| 이동 안 됨 | `sgb.mansejin.com/health` 확인, 나스 API 실행 중인지 |
+| 이동 안 됨 | `sgb.mansejin.com/health` 확인, Vercel 배포 상태 확인 |

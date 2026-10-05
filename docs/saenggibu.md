@@ -41,7 +41,7 @@ python3 server.py
 | https://mansejin.com/admin/saenggibu/ | 리다이렉트 (북마크용) |
 | https://sgb.mansejin.com/admin/saenggibu | **실제 관리자 UI** |
 
-나스에서 `web/admin` + API만 최신이면 됩니다. tools-site는 redirect HTML 한 장만 유지.
+Vercel 배포(`web/admin` + API)만 최신이면 됩니다. tools-site는 redirect HTML 한 장만 유지.
 
 자동 sync: `saenggibu` Secrets에 `TOOLS_SITE_PAT` 설정 시 push마다 tools-site 반영.
 

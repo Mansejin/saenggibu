@@ -36,7 +36,7 @@ TSV 업로드는 **고급** 메뉴로만 남겨 두었습니다. 기본 경로�
 
 - `GET /api/usage` — 남은 횟수 확인
 - 작성 시 `check_generation_allowed()` → 성공 후 `record_generation()`
-- **결제 연동(Stripe 등)은 아직 없음** — NAS/서버에서 `SGB_PLAN`으로 수동 전환
+- **결제 연동(Stripe 등)은 아직 없음** — Vercel 환경변수 `SGB_PLAN`으로 수동 전환
 
 ## API 요약 (v2)
 
@@ -53,13 +53,7 @@ TSV 업로드는 **고급** 메뉴로만 남겨 두었습니다. 기본 경로�
 
 ## 배포 후 확인
 
-NAS에서 최신 코드 pull 후:
-
-```bash
-docker compose up -d --build
-```
-
-관리자 UI: `https://sgb.mansejin.com/admin/saenggibu`
+main push → Vercel 자동 배포 후 관리자 UI: `https://sgb.mansejin.com/admin/saenggibu`
 
 ## 이후 과제
 

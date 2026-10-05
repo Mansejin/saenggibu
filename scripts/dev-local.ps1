@@ -113,7 +113,7 @@ if (-not (Test-Path .env)) {
 
 Ensure-LocalEnvFile -EnvPath (Join-Path $Root ".env")
 Write-Host "  Login password (local): dev-local" -ForegroundColor Green
-Write-Host "  Change ADMIN_PASSWORD in .env for NAS/production" -ForegroundColor DarkGray
+Write-Host "  Production ADMIN_PASSWORD lives in Vercel env vars" -ForegroundColor DarkGray
 Write-Host ""
 
 $script:PythonExe = $null

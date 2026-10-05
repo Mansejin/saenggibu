@@ -39,13 +39,14 @@
 
     <div class="admin-changelog-current admin-card">
       <p class="admin-changelog-version-label">현재 버전</p>
-      <p class="admin-changelog-version">v2.3.0</p>
-      <p class="admin-muted">2026년 7월 8일 · <code>main</code> 브랜치</p>
+      <p class="admin-changelog-version">v2.4.0</p>
+      <p class="admin-muted">2026년 10월 5일 · <code>main</code> 브랜치</p>
     </div>
 
     <nav class="admin-changelog-toc admin-card" aria-label="버전 목차">
       <p class="admin-changelog-toc-title">버전 목차</p>
       <ol class="admin-changelog-toc-list">
+        <li><a href="#v240">v2.4.0</a> — Vercel 이전</li>
         <li><a href="#v230">v2.3.0</a> — NEIS 글자수·관리 화면 정리</li>
         <li><a href="#v220">v2.2.0</a> — 작성 후 수정·검사 루프</li>
         <li><a href="#v211">v2.1.1</a> — 전체 패치 노트 정리</li>
@@ -59,6 +60,22 @@
         <li><a href="#v000">v0.1.0</a> — 저장소 시작 (디디딧 CLI)</li>
       </ol>
     </nav>
+
+    <article id="v240" class="admin-changelog-release admin-card">
+      <header class="admin-changelog-release-head">
+        <h2>v2.4.0</h2>
+        <time datetime="2026-10-05">2026.10.05</time>
+      </header>
+      <p class="admin-muted admin-changelog-summary">회사 NAS에서 Vercel로 이전</p>
+      <section class="admin-changelog-section">
+        <h3>배포 · 저장소</h3>
+        <ul class="admin-changelog-list">
+          <li><strong>Vercel</strong> — 서버가 Vercel(도쿄 리전)에서 실행. <code>main</code> push 시 자동 배포. NAS docker 배포 삭제</li>
+          <li><strong>데이터</strong> — 학생·샘플·스타일 분석을 Upstash Redis에 암호화 저장 (기존 NAS 데이터 이전)</li>
+          <li><strong>일괄 작성</strong> — 5분 단위로 나눠 이어서 실행. 서버가 중간에 재시작돼도 이어서 진행</li>
+        </ul>
+      </section>
+    </article>
 
     <article id="v230" class="admin-changelog-release admin-card">
       <header class="admin-changelog-release-head">

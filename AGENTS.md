@@ -9,10 +9,11 @@ This repo hosts the 생기부 (saenggibu) writing machine with two entry points:
 
 The 디디딧 Google Sheets CLI used to live here; it moved to `Mansejin/auto_script`.
 
-### NAS deploy
+### Deploy
 
-- Deploy = push to `main` (GitHub Actions). Details: `docs/deploy-nas-auto.md`.
-- How to reach the NAS (SSH aliases, Tailscale, office vs home) is documented only in the private repo `Mansejin/ohola-nas`. Do not add NAS connection docs here.
+- Production runs on Vercel (project `mansejin/saenggibu`); push to `main` deploys. Details: `docs/deploy-vercel.md`.
+- It no longer runs on the office NAS. Do not add NAS/docker deploy scripts back.
+- Storage goes through `src/saenggibu/datastore.py`: Upstash Redis when `KV_REST_API_URL`/`KV_REST_API_TOKEN` are set, local `data/saenggibu/` otherwise. Never put the Redis credentials in `.env.local` (it is loaded by `config.py`, so local runs would write to production data).
 
 ### Setup / run notes
 
@@ -22,7 +23,7 @@ The 디디딧 Google Sheets CLI used to live here; it moved to `Mansejin/auto_sc
 - **`GEMINI_API_KEY` is optional**: only the AI writing step (`sgb.py run`, `/api/run/async`) needs it. Everything else — login, students/samples CRUD, import/export, analyze (local stats), inspector — works without it.
 - The web app and `sgb.py` share the same `data/saenggibu/` data dir, so a student created via the API shows up in `sgb.py students list` and vice versa.
 - Login flow: `POST /api/auth/login` with `{"password": "<ADMIN_PASSWORD>"}` returns a bearer token; pass it as `Authorization: Bearer <token>` to the other `/api/...` endpoints.
-- Docker Compose (`docker-compose.yml`) fronts the API with an nginx gateway on port 8787; not needed for local dev — `python3 server.py` is enough.
+- Run jobs (`/api/run/async`) are resumable: on Vercel each invocation stops starting new tasks after `SGB_JOB_BUDGET_SEC` (180s) and the next `GET /api/jobs/{id}` poll resumes it via a lease in the job file.
 
 ### Test gotcha (non-obvious)
 

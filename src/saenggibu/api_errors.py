@@ -95,7 +95,7 @@ def friendly_api_error(exc: BaseException | str | Any) -> str:
         return "Gemini API 키가 설정되지 않았거나 올바르지 않습니다."
 
     if "connection" in lowered or "connect" in lowered or "network" in lowered:
-        return "네트워크 연결에 실패했습니다. NAS·인터넷 상태를 확인하세요."
+        return "네트워크 연결에 실패했습니다. 잠시 후 다시 시도하세요."
 
     if provider_message and len(provider_message) < 160 and "{" not in provider_message:
         return provider_message

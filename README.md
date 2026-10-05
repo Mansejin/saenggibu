@@ -26,9 +26,7 @@ python sgb.py run --yes
 
 ## 배포
 
-`main`에 push하면 GitHub Actions가 회사 NAS에 자동 배포합니다. → [`docs/deploy-nas-auto.md`](docs/deploy-nas-auto.md)
-
-NAS 접속 방법은 이 저장소에 적지 않고 [Mansejin/ohola-nas](https://github.com/Mansejin/ohola-nas)(비공개) 한 곳에서만 관리합니다.
+`main`에 push하면 Vercel이 자동 배포합니다. 데이터는 Upstash Redis에 암호화해 저장합니다. → [`docs/deploy-vercel.md`](docs/deploy-vercel.md)
 
 ## 보안 — Git에 올리면 안 되는 것
 
@@ -36,7 +34,7 @@ NAS 접속 방법은 이 저장소에 적지 않고 [Mansejin/ohola-nas](https:/
 |------|------|------|
 | API 키 | `.env`, `GEMINI_API_KEY` | `config*.example.env`는 빈 값만 |
 | 관리자 비밀번호 | `.env` `ADMIN_PASSWORD` | 코드·HTML에 힌트 넣지 말 것 |
-| NAS 비밀번호·SSH 키 | PC 로컬 (`ohola-nas/.env.local`, `~/.ssh/`) | GitHub Secrets로만 CI에 전달 |
+| 데이터 암호화 키 | Vercel 환경변수 `SGB_DATA_KEY`, PC 사본 `.env.vercel-secrets` | 잃으면 데이터 복구 불가 |
 
 커밋 전 `git status`로 `.env`가 스테이징되지 않았는지 확인하세요.
 
@@ -44,10 +42,10 @@ NAS 접속 방법은 이 저장소에 적지 않고 [Mansejin/ohola-nas](https:/
 
 ```
 sgb.py, src/saenggibu/   # 생기부 작성 엔진 + CLI
-server.py, src/web/      # FastAPI 관리자 API
+server.py, src/web/      # FastAPI 관리자 API (로컬 실행)
+app.py, vercel.json      # Vercel 엔트리포인트·설정
 web/admin/               # 관리자 웹 UI
-docker-compose*.yml      # API + nginx 게이트웨이 + Cloudflare 터널
-scripts/                 # 로컬 개발·NAS 배포 스크립트
+scripts/                 # 로컬 개발·데이터 이전 스크립트
 docs/                    # 사용·배포·운영 문서
 prompts/saenggibu.md     # 작성 프롬프트
 ```
