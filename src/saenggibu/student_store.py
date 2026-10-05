@@ -3,17 +3,17 @@ from __future__ import annotations
 import csv
 import json
 import re
-import shutil
 from io import BytesIO, StringIO
 from pathlib import Path
 
 from cryptography.exceptions import InvalidTag
 
+from . import datastore
 from .config import OUTPUTS_DIR, STUDENTS_DIR, ensure_data_dirs
-from .data_crypto import ENC_MARKER
+from .data_crypto import ENC_MARKER, decrypt_json
 from .io_utils import read_table_file
 from .models import StudentInput, new_id
-from .secure_io import load_secure_json, save_secure_json
+from .secure_io import save_secure_json
 from .storage_policy import student_dict_for_disk
 
 
@@ -21,10 +21,14 @@ def _student_path(student_id: str) -> Path:
     return STUDENTS_DIR / f"{student_id}.json"
 
 
-def _read_file_data(path: Path) -> dict | None:
+def _decode_student_data(raw: str | None) -> dict | None:
+    if raw is None:
+        return None
     try:
-        data = load_secure_json(path)
-    except (OSError, ValueError, json.JSONDecodeError, RuntimeError, InvalidTag):
+        data = json.loads(raw)
+        if isinstance(data, dict) and data.get(ENC_MARKER):
+            data = decrypt_json(data)
+    except (ValueError, json.JSONDecodeError, RuntimeError, InvalidTag, KeyError):
         return None
     if isinstance(data, dict) and data.get(ENC_MARKER):
         return None
@@ -33,22 +37,38 @@ def _read_file_data(path: Path) -> dict | None:
     return data
 
 
-def _load_student_from_path(path: Path) -> StudentInput | None:
-    data = _read_file_data(path)
+def _read_file_data(path: Path) -> dict | None:
+    try:
+        raw = datastore.read_text(path)
+    except OSError:
+        return None
+    return _decode_student_data(raw)
+
+
+def _student_from_data(path: Path, data: dict | None) -> StudentInput | None:
     if data is None:
         return None
     return StudentInput.from_dict({**data, "id": path.stem})
 
 
+def _load_student_from_path(path: Path) -> StudentInput | None:
+    return _student_from_data(path, _read_file_data(path))
+
+
+def _load_all_student_files() -> list[tuple[Path, dict | None]]:
+    ensure_data_dirs()
+    paths = datastore.list_files(STUDENTS_DIR, "*.json")
+    raws = datastore.read_many(paths)
+    return [(path, _decode_student_data(raws.get(path))) for path in paths]
+
+
 def _resolve_student_path(student_id: str) -> Path | None:
     direct = _student_path(student_id)
-    if direct.exists():
+    if datastore.exists(direct):
         return direct
-    ensure_data_dirs()
-    for path in STUDENTS_DIR.glob("*.json"):
+    for path, data in _load_all_student_files():
         if path.stem == student_id:
             return path
-        data = _read_file_data(path)
         if data is None:
             continue
         if str(data.get("id", "")).strip() == student_id:
@@ -86,23 +106,21 @@ def _ensure_student_id_matches_file(student: StudentInput, path: Path) -> None:
     student.id = path.stem
     save_student(student)
     stale = _student_path(old_id)
-    if stale.exists() and stale.resolve() != path.resolve():
-        stale.unlink(missing_ok=True)
+    if stale != path and datastore.exists(stale):
+        datastore.delete(stale)
 
 
 def reconcile_students(*, remove_ghosts: bool = True) -> dict[str, list[str]]:
-    ensure_data_dirs()
     removed: list[str] = []
     fixed: list[str] = []
-    for path in sorted(STUDENTS_DIR.glob("*.json")):
-        student = _load_student_from_path(path)
+    for path, data in _load_all_student_files():
+        student = _student_from_data(path, data)
         if student is None:
             continue
         if remove_ghosts and _is_ghost_student(student):
-            path.unlink(missing_ok=True)
+            datastore.delete(path)
             removed.append(path.name)
             continue
-        data = _read_file_data(path)
         if isinstance(data, dict) and data.get("id") != path.stem:
             _ensure_student_id_matches_file(student, path)
             fixed.append(path.stem)
@@ -111,10 +129,9 @@ def reconcile_students(*, remove_ghosts: bool = True) -> dict[str, list[str]]:
 
 def list_students(*, status: str | None = None) -> list[StudentInput]:
     reconcile_students()
-    ensure_data_dirs()
     students: list[StudentInput] = []
-    for path in sorted(STUDENTS_DIR.glob("*.json")):
-        student = _load_student_from_path(path)
+    for path, data in _load_all_student_files():
+        student = _student_from_data(path, data)
         if student is None:
             continue
         if status is None or student.status == status:
@@ -155,13 +172,11 @@ def delete_student(student_id: str) -> bool:
     if not path:
         return False
     file_id = path.stem
-    path.unlink()
-    output_dir = _student_output_dir(file_id)
-    if output_dir.exists():
-        shutil.rmtree(output_dir, ignore_errors=True)
+    datastore.delete(path)
+    datastore.delete_tree(_student_output_dir(file_id))
     stale = _student_path(student_id)
-    if stale.exists() and stale.resolve() != path.resolve():
-        stale.unlink(missing_ok=True)
+    if stale != path and datastore.exists(stale):
+        datastore.delete(stale)
     return True
 
 
@@ -178,13 +193,10 @@ def delete_students(student_ids: list[str]) -> dict[str, list[str] | int]:
 
 def delete_all_students() -> int:
     ensure_data_dirs()
-    paths = list(STUDENTS_DIR.glob("*.json"))
+    paths = datastore.list_files(STUDENTS_DIR, "*.json")
     for path in paths:
-        file_id = path.stem
-        path.unlink(missing_ok=True)
-        output_dir = _student_output_dir(file_id)
-        if output_dir.exists():
-            shutil.rmtree(output_dir, ignore_errors=True)
+        datastore.delete(path)
+        datastore.delete_tree(_student_output_dir(path.stem))
     return len(paths)
 
 

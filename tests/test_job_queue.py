@@ -77,3 +77,49 @@ def test_execute_all_targets_single_student(
     assert calls == [["행발"], ["세특"]]
     assert finished.result["all_targets"] is True
     assert finished.result["sections_done"] == ["행발", "세특"]
+    assert finished.result["student"]["generated"] == {"행발": "행발 본문", "세특": {"윤사": "세특 본문"}}
+
+
+def test_job_resumes_after_budget(jobs_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from src.saenggibu import job_queue
+
+    students = [
+        StudentInput(id=f"s{i}", name=f"학생{i}", grade=2, class_num=1, number=i, notes={"행발": "메모"})
+        for i in range(1, 4)
+    ]
+    by_id = {s.id: s for s in students}
+    calls: list[str] = []
+
+    def fake_generate(current: StudentInput, *, sections, progress=None):
+        calls.append(current.id)
+        current.generated = {"행발": f"{current.id} 본문"}
+        current.status = "done"
+        return current
+
+    clock = iter(range(0, 1000, 100))
+    monkeypatch.setattr(job_queue.time, "monotonic", lambda: next(clock))
+    monkeypatch.setenv("SGB_JOB_BUDGET_SEC", "150")
+    monkeypatch.setattr("src.saenggibu.job_queue.list_students", lambda status=None: list(students))
+    monkeypatch.setattr("src.saenggibu.job_queue.get_student", lambda sid: by_id.get(sid))
+    monkeypatch.setattr("src.saenggibu.job_queue.generate_for_student", fake_generate)
+
+    job = create_run_job(sections=["행발"])
+    first = execute_run_job(job.id, job.lease_token)
+    assert first.status == "running"
+    assert 0 < first.cursor < 3
+    assert job_queue.claim_stalled_job("missing") is None
+
+    token = job_queue.claim_stalled_job(job.id)
+    assert token
+    assert execute_run_job(job.id, "stale-token").cursor == first.cursor
+
+    while True:
+        current = execute_run_job(job.id, token)
+        if current.status != "running":
+            break
+        token = job_queue.claim_stalled_job(job.id)
+
+    assert current.status == "done"
+    assert calls == ["s1", "s2", "s3"]
+    assert current.result["processed"] == 3
+    assert [item["id"] for item in current.result["results"]] == ["s1", "s2", "s3"]

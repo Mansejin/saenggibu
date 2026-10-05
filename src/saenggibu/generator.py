@@ -11,8 +11,8 @@ from .api_errors import friendly_api_error
 from .gemini_client import generate_text
 from .subject_info import format_setuk_prompt_context
 from .storage_policy import store_generated_on_server
-from .io_utils import save_json
 from .models import StudentInput
+from .secure_io import save_secure_json
 from .pattern_analyzer import analyze_and_save, load_patterns
 from .student_store import save_student
 from .usage import check_generation_allowed, record_generation
@@ -184,10 +184,8 @@ def generate_for_student(
 def _export_student_output(student: StudentInput) -> Path:
     ensure_data_dirs()
     ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    out_dir = OUTPUTS_DIR / student.id
-    out_dir.mkdir(parents=True, exist_ok=True)
-    path = out_dir / f"{ts}.json"
-    save_json(
+    path = OUTPUTS_DIR / student.id / f"{ts}.json"
+    save_secure_json(
         path,
         {
             "student": student.to_dict(),

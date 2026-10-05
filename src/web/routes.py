@@ -16,7 +16,7 @@ from src.saenggibu.storage_policy import draft_map_from_items, store_generated_o
 from src.saenggibu.curriculum import find_relevant_standards, resolve_subject_entry
 from src.saenggibu.pii_mask import mask_pii_enabled, mask_student_names_enabled
 from src.saenggibu.writing_guides import get_writing_guide
-from src.saenggibu.job_queue import create_run_job, execute_run_job, get_job
+from src.saenggibu.job_queue import claim_stalled_job, create_run_job, execute_run_job, get_job
 from src.saenggibu.inspector.issues import report_to_dict
 from src.saenggibu.inspector.runner import inspect_batch, inspect_student_by_id
 from src.saenggibu.neis_format import parse_neis_paste
@@ -779,7 +779,7 @@ def api_run_async(
             limit=payload.limit,
             drafts=_run_draft_payload(payload.drafts),
         )
-    background_tasks.add_task(execute_run_job, job.id)
+    background_tasks.add_task(execute_run_job, job.id, job.lease_token)
     return {
         "job_id": job.id,
         "status": job.status,
@@ -789,11 +789,21 @@ def api_run_async(
     }
 
 
+_JOB_INTERNAL_FIELDS = ("tasks", "drafts", "results", "last_student", "lease_token", "lease_until")
+
+
 @router.get("/jobs/{job_id}")
-def api_job_show(job_id: str, _: AdminSession = Depends(require_admin)) -> dict[str, Any]:
+def api_job_show(
+    job_id: str,
+    background_tasks: BackgroundTasks,
+    _: AdminSession = Depends(require_admin),
+) -> dict[str, Any]:
     job = get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="작업을 찾을 수 없습니다.")
-    data = job.to_dict()
+    token = claim_stalled_job(job_id)
+    if token:
+        background_tasks.add_task(execute_run_job, job_id, token)
+    data = {key: value for key, value in job.to_dict().items() if key not in _JOB_INTERNAL_FIELDS}
     data.update(gemini_models_for_api())
     return data

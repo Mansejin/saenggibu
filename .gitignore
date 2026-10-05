@@ -19,3 +19,7 @@ data/saenggibu/patterns.json
 data/saenggibu/jobs/
 data/saenggibu/usage.json
 data/saenggibu/maintenance.on
+.vercel
+.env*
+.agents/
+skills-lock.json

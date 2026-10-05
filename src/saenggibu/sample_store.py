@@ -3,9 +3,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from . import datastore
 from .config import SAMPLES_DIR, ensure_data_dirs
 from .io_utils import read_table_file
-from .secure_io import load_secure_json, save_secure_json
+from .secure_io import load_secure_json, load_secure_json_file, save_secure_json
 from .models import SampleRecord, new_id
 from .document_import import parse_docx_records, parse_xlsx_records
 
@@ -16,7 +17,7 @@ def _index_path() -> Path:
 
 def _load_index() -> list[dict]:
     path = _index_path()
-    if not path.exists():
+    if not datastore.exists(path):
         return []
     try:
         data = load_secure_json(path)
@@ -51,25 +52,11 @@ def _has_sections_content(data: dict) -> bool:
     return False
 
 
-def _resolve_sample_dict(item: dict) -> dict | None:
-    sample_id = item.get("id")
-    if not sample_id:
-        return None
-    json_path = _sample_json_path(sample_id)
-    if json_path.exists():
-        try:
-            return load_secure_json(json_path)
-        except (json.JSONDecodeError, OSError, ValueError, RuntimeError):
-            pass
-    if _has_sections_content(item):
-        return item
-    return None
-
-
 def reconcile_sample_index() -> list[str]:
     """Remove index rows with no json file and no inline section text."""
     ensure_data_dirs()
     items = _load_index()
+    json_names = {path.name for path in datastore.list_files(SAMPLES_DIR, "*.json")}
     kept: list[dict] = []
     removed: list[str] = []
     for item in items:
@@ -77,8 +64,7 @@ def reconcile_sample_index() -> list[str]:
         if not sample_id:
             removed.append("(no-id)")
             continue
-        resolved = _resolve_sample_dict(item)
-        if resolved:
+        if f"{sample_id}.json" in json_names or _has_sections_content(item):
             kept.append(item)
         else:
             removed.append(sample_id)
@@ -107,13 +93,13 @@ def delete_sample(sample_id: str) -> bool:
     items = _load_index()
     in_index = any(item.get("id") == sample_id for item in items)
     sample_path = _sample_json_path(sample_id)
-    has_json = sample_path.exists()
+    has_json = datastore.exists(sample_path)
     if not in_index and not has_json:
         return False
     if in_index:
         kept = [item for item in items if item.get("id") != sample_id]
         _save_index(kept)
-    sample_path.unlink(missing_ok=True)
+    datastore.delete(sample_path)
     return True
 
 
@@ -134,13 +120,13 @@ def delete_all_samples() -> int:
     items = _load_index()
     count = len(items)
     _save_index([])
-    for path in SAMPLES_DIR.glob("sample*.json"):
-        path.unlink(missing_ok=True)
+    for path in datastore.list_files(SAMPLES_DIR, "sample*.json"):
+        datastore.delete(path)
     return count
 
 
 def import_json_file(path: Path) -> SampleRecord:
-    data = load_secure_json(path)
+    data = load_secure_json_file(path)
     if isinstance(data, list):
         raise ValueError("JSON 배열은 import-dir로 처리하세요. 단일 객체 파일만 지원합니다.")
     record = SampleRecord.from_dict(data)

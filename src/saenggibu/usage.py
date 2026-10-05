@@ -35,8 +35,10 @@ def _plan() -> str:
 
 
 def load_usage() -> dict:
+    from . import datastore
+
     ensure_data_dirs()
-    if not USAGE_PATH.exists():
+    if not datastore.exists(USAGE_PATH):
         return {"month": _month_key(), "generations": 0}
     try:
         from .secure_io import load_secure_json

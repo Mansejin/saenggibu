@@ -56,5 +56,7 @@ def is_dev_mode() -> bool:
 
 
 def ensure_data_dirs() -> None:
+    from .datastore import ensure_dir
+
     for path in (SAMPLES_DIR, STUDENTS_DIR, OUTPUTS_DIR, JOBS_DIR):
-        path.mkdir(parents=True, exist_ok=True)
+        ensure_dir(path)

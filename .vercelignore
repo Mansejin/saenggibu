@@ -1,0 +1,10 @@
+.github/
+tests/
+scripts/
+deploy/
+docker/
+data/saenggibu/*
+!data/saenggibu/fixtures/
+.env
+.env.*
+logs/

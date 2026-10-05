@@ -162,7 +162,9 @@ def save_patterns(patterns: dict[str, Any], *, style_guide: str = "") -> dict[st
 
 
 def load_patterns() -> dict[str, Any] | None:
-    if not PATTERNS_PATH.exists():
+    from . import datastore
+
+    if not datastore.exists(PATTERNS_PATH):
         return None
     from .secure_io import load_secure_json
 
